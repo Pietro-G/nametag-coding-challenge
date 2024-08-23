@@ -94,10 +94,7 @@ jobs:
 
     - name: Build the application
       run: |
-        pyinstaller --onefile --windowed ^
-          --add-data "client/assets;assets" ^
-          --add-data "client/version.txt;." ^
-          client\client.py
+        pyinstaller --onefile --windowed --add-data "client/assets;assets" --add-data "client/version.txt;." client\client.py
 
     - name: Archive build artifacts
       run: Compress-Archive -Path dist\* -DestinationPath app-windows.zip
