@@ -1,8 +1,7 @@
 import pygame
 import sys
-import requests
 from button import Button
-from updater import CURRENT_VERSION, check_for_updates
+from updater import CURRENT_VERSION, main as apply_update
 
 pygame.init()
 
@@ -46,14 +45,14 @@ pygame.time.set_timer(pygame.USEREVENT, 1000)
 started = False
 
 def draw_version_box():
-    version_text = CURRENT_VERSION  # Replace with actual version
+    version_text = CURRENT_VERSION  # Replace with actual version if it changes dynamically
     version_surface = VERSION_FONT.render(version_text, True, BLACK)
     version_rect = pygame.Rect(WIDTH - 160, HEIGHT - 40, 150, 30)  # Position and size of the box
     pygame.draw.rect(SCREEN, WHITE, version_rect)  # Draw the box
     SCREEN.blit(version_surface, version_surface.get_rect(center=version_rect.center))    
 
-# Run the update check before opening the main window
-check_for_updates()
+# Run the update check and apply update if necessary
+apply_update()
 
 while True:
     for event in pygame.event.get():
@@ -64,10 +63,7 @@ while True:
             mouse_pos = pygame.mouse.get_pos()
             if START_STOP_BUTTON.check_for_input(mouse_pos):
                 started = not started
-                if started:
-                    START_STOP_BUTTON.text_input = "STOP"
-                else:
-                    START_STOP_BUTTON.text_input = "START"
+                START_STOP_BUTTON.text_input = "STOP" if started else "START"
                 START_STOP_BUTTON.text = pygame.font.Font("assets/ArialRoundedMTBold.ttf", 20).render(
                     START_STOP_BUTTON.text_input, True, START_STOP_BUTTON.base_color)
 
