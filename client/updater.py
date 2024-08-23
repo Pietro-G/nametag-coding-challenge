@@ -5,35 +5,65 @@ import requests
 import shutil
 import hashlib
 import subprocess
+import platform
 
-UPDATE_SERVER_URL = "http://localhost:8000/check-update"
-CURRENT_VERSION = "v1.0"
+# Base URL for the API server
+API_BASE_URL = "http://localhost:8000"
+
+# Endpoints
+API_ENDPOINTS = {
+    "check_update": f"{API_BASE_URL}/get-update",
+    "check_version": f"{API_BASE_URL}/check-version"
+}
+
+VERSION_FILE = "version.txt"
 DOWNLOAD_PATH = "/tmp/new_version.zip"
 BACKUP_PATH = "/tmp/backup.zip"
 
+def get_os_version():
+    system = platform.system()
+    if system == "Linux":
+        return "linux"
+    elif system == "Darwin":
+        return "macos"
+    elif system == "Windows":
+        return "windows"
+    else:
+        raise ValueError("Unsupported OS. Only Linux, macOS, and Windows are supported.")
+
+def read_current_version():
+    if os.path.exists(VERSION_FILE):
+        with open(VERSION_FILE, 'r') as file:
+            return file.read().strip()
+    return None
+
+def write_current_version(version):
+    with open(VERSION_FILE, 'w') as file:
+        file.write(version)
+
 def check_for_updates():
-    # Simulate checking for updates
-    print("Checking for updates ...")
+    os_version = get_os_version()
+    url = f"{API_ENDPOINTS['check_update']}?os_version={os_version}"
+    
+    print(f"Checking for updates for {os_version} ...")
     time.sleep(3)
     try:
         # Contact the FastAPI server to get the latest version info
-        response = requests.get("http://localhost:8000/check-update")
+        response = requests.get(url)
         response.raise_for_status()
         version_info = response.json()
 
-        if version_info['version'] != CURRENT_VERSION:
+        current_version = read_current_version()
+        if version_info['version'] != current_version:
             print("Downloading latest update...")
+            return version_info
         else:
-            print("Latest version running: ", CURRENT_VERSION)
+            print("Latest version running: ", current_version)
+            return None
 
     except requests.exceptions.RequestException as e:
         print(f"Failed to check for updates: {e}")
-
-def get_latest_version_info():
-    response = requests.get(UPDATE_SERVER_URL)
-    if response.status_code == 200:
-        return response.json()
-    return None
+        return None
 
 def download_update(download_url):
     response = requests.get(download_url, stream=True)
@@ -56,15 +86,20 @@ def apply_update():
     sys.exit()
 
 def main():
-    version_info = get_latest_version_info()
-    if version_info and version_info['version'] > CURRENT_VERSION:
-        download_update(version_info['download_url'])
-        if validate_update(version_info['checksum']):
-            apply_update()
+    try:
+        version_info = check_for_updates()
+        if version_info:
+            download_update(version_info['download_url'])
+            if validate_update(version_info['checksum']):
+                apply_update()
+                write_current_version(version_info['version'])
+            else:
+                print("Update validation failed.")
         else:
-            print("Update validation failed.")
-    else:
-        print("No updates available.")
+            print("No updates available.")
+    except ValueError as e:
+        print(e)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

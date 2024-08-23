@@ -1,7 +1,7 @@
 import pygame
 import sys
 from button import Button
-from updater import CURRENT_VERSION, main as apply_update
+from updater import read_current_version, main as apply_update
 
 pygame.init()
 
@@ -45,7 +45,7 @@ pygame.time.set_timer(pygame.USEREVENT, 1000)
 started = False
 
 def draw_version_box():
-    version_text = CURRENT_VERSION  # Replace with actual version if it changes dynamically
+    version_text = read_current_version()
     version_surface = VERSION_FONT.render(version_text, True, BLACK)
     version_rect = pygame.Rect(WIDTH - 160, HEIGHT - 40, 150, 30)  # Position and size of the box
     pygame.draw.rect(SCREEN, WHITE, version_rect)  # Draw the box

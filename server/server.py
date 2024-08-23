@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Query, Response
 from pydantic import BaseModel
 import uvicorn
 import requests
@@ -53,8 +53,18 @@ class VersionInfo(BaseModel):
     download_url: str
     checksum: str  # This should be computed or fetched from the release
 
-@api.get("/check-update", response_model=VersionInfo)
-def check_update():
+@api.get("/check-version")
+def check_version():
+    release = get_latest_release()
+    version = release.get("tag_name")
+    
+    if not version:
+        raise HTTPException(status_code=404, detail="Version information not found")
+
+    return {"version": version}
+
+@api.get("/get-update")
+def check_update(os_version: str = Query(..., description="OS version to fetch update for")):
     release = get_latest_release()
     version = release.get("tag_name")
     assets = release.get("assets", [])
@@ -62,10 +72,11 @@ def check_update():
     checksum = None
     
     for asset in assets:
-        if asset["name"].endswith(".zip"):
+        if os_version in asset["name"] and asset["name"].endswith(".zip"):
             download_url = asset["browser_download_url"]
             checksum = asset.get("checksum", "N/A")  # Adjust this if your assets have a checksum field
-            
+            break
+    
     if not download_url:
         raise HTTPException(status_code=404, detail="Update not found")
     
