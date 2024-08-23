@@ -51,7 +51,7 @@ def health_check():
 class VersionInfo(BaseModel):
     version: str
     download_url: str
-    checksum: str  # This should be computed or fetched from the release
+    checksum_url: str
 
 @api.get("/check-version")
 def check_version():
@@ -68,47 +68,33 @@ def check_update(os_version: str = Query(..., description="OS version to fetch u
     release = get_latest_release()
     version = release.get("tag_name")
     assets = release.get("assets", [])
+    
+    if not assets:
+        raise HTTPException(status_code=404, detail="No assets found for the release")
+    
     download_url = None
-    checksum = None
+    checksum_url = None
     
     for asset in assets:
         if os_version in asset["name"] and asset["name"].endswith(".zip"):
             download_url = asset["browser_download_url"]
-            checksum = asset.get("checksum", "N/A")  # Adjust this if your assets have a checksum field
+            
+            # Generate checksum URL
+            checksum_name = asset["name"] + ".sha256"
+            checksum_url = next((a["browser_download_url"] for a in assets if a["name"] == checksum_name), None)
+            
+            if checksum_url is None:
+                raise HTTPException(status_code=404, detail=f"Checksum file for {asset['name']} not found")
+            
             break
     
     if not download_url:
-        raise HTTPException(status_code=404, detail="Update not found")
+        raise HTTPException(status_code=404, detail=f"No update found for OS version '{os_version}'")
     
     return VersionInfo(
         version=version,
         download_url=download_url,
-        checksum=checksum
-    )
-
-@api.get("/download/{os_version}")
-def download_update(os_version: str):
-    release = get_latest_release()
-    version = release.get("tag_name")
-    assets = release.get("assets", [])
-    download_url = None
-    
-    for asset in assets:
-        if os_version in asset["name"] and asset["name"].endswith(".zip"):
-            download_url = asset["browser_download_url"]
-            break
-
-    if not download_url:
-        raise HTTPException(status_code=404, detail="Update not found")
-
-    response = requests.get(download_url, headers={"Authorization": f"token {GITHUB_TOKEN}"}, stream=True)
-    if response.status_code != 200:
-        raise HTTPException(status_code=response.status_code, detail="Failed to download update")
-
-    return Response(
-        content=response.content,
-        media_type="application/zip",
-        headers={"Content-Disposition": f"attachment; filename={version}.zip"}
+        checksum_url=checksum_url
     )
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 import pygame
 import sys
+import os
 from button import Button
 from updater import read_current_version, main as apply_update
 
@@ -24,24 +25,35 @@ background_color = RED  # Default background color
 # Initialize clock
 CLOCK = pygame.time.Clock()
 
-# Load assets
-BACKDROP = pygame.image.load("assets/backdrop.png")
-WHITE_BUTTON = pygame.image.load("assets/button.png")
+# Get the base directory for assets
+if getattr(sys, 'frozen', False):
+    # If running from a frozen executable
+    BASE_DIR = sys._MEIPASS
+else:
+    # If running from a script
+    BASE_DIR = os.path.dirname(__file__)
 
-FONT = pygame.font.Font("assets/ArialRoundedMTBold.ttf", 120)
-VERSION_FONT = pygame.font.Font("assets/ArialRoundedMTBold.ttf", 20)  # Font for the version box
+ASSETS_DIR = os.path.join(BASE_DIR, 'assets')
+VERSION_FILE = os.path.join(BASE_DIR, 'version.txt')
+
+# Load assets
+BACKDROP = pygame.image.load(os.path.join(ASSETS_DIR, "backdrop.png"))
+WHITE_BUTTON = pygame.image.load(os.path.join(ASSETS_DIR, "button.png"))
+
+FONT = pygame.font.Font(os.path.join(ASSETS_DIR, "ArialRoundedMTBold.ttf"), 120)
+VERSION_FONT = pygame.font.Font(os.path.join(ASSETS_DIR, "ArialRoundedMTBold.ttf"), 20)  # Font for the version box
 
 timer_text = FONT.render("25:00", True, WHITE)
 timer_text_rect = timer_text.get_rect(center=(WIDTH/2, HEIGHT/2-25))
 
 START_STOP_BUTTON = Button(WHITE_BUTTON, (WIDTH/2, HEIGHT/2+100), 170, 60, "START", 
-                    pygame.font.Font("assets/ArialRoundedMTBold.ttf", 20), "#c97676", "#9ab034")
+                    pygame.font.Font(os.path.join(ASSETS_DIR, "ArialRoundedMTBold.ttf"), 20), "#c97676", "#9ab034")
 POMODORO_BUTTON = Button(None, (WIDTH/2-150, HEIGHT/2-140), 120, 30, "Pomodoro", 
-                    pygame.font.Font("assets/ArialRoundedMTBold.ttf", 20), "#FFFFFF", "#9ab034")
+                    pygame.font.Font(os.path.join(ASSETS_DIR, "ArialRoundedMTBold.ttf"), 20), "#FFFFFF", "#9ab034")
 SHORT_BREAK_BUTTON = Button(None, (WIDTH/2, HEIGHT/2-140), 120, 30, "Short Break", 
-                    pygame.font.Font("assets/ArialRoundedMTBold.ttf", 20), "#FFFFFF", "#9ab034")
+                    pygame.font.Font(os.path.join(ASSETS_DIR, "ArialRoundedMTBold.ttf"), 20), "#FFFFFF", "#9ab034")
 LONG_BREAK_BUTTON = Button(None, (WIDTH/2+150, HEIGHT/2-140), 120, 30, "Long Break", 
-                    pygame.font.Font("assets/ArialRoundedMTBold.ttf", 20), "#FFFFFF", "#9ab034")
+                    pygame.font.Font(os.path.join(ASSETS_DIR, "ArialRoundedMTBold.ttf"), 20), "#FFFFFF", "#9ab034")
 
 POMODORO_LENGTH = 1500  # 1500 secs / 25 mins
 SHORT_BREAK_LENGTH = 300  # 300 secs / 5 mins
@@ -68,16 +80,13 @@ def draw_color_options():
         pygame.draw.rect(SCREEN, color, color_rect)
         pygame.draw.rect(SCREEN, BLACK, color_rect, 2)  # Border around each color box
 
-def get_color_from_pos(pos):
-    colors = BACKGROUND_COLORS
-    box_size = 40
-    start_x = WIDTH - 250
-    start_y = HEIGHT - 100
-    for i, color in enumerate(colors):
-        color_rect = pygame.Rect(start_x + i * (box_size + 10), start_y, box_size, box_size)
-        if color_rect.collidepoint(pos):
-            return color
-    return None
+# Update the read_current_version function to handle the version.txt file
+def read_current_version():
+    try:
+        with open(VERSION_FILE, 'r') as file:
+            return file.read().strip()
+    except FileNotFoundError:
+        return "Unknown version"
 
 # Run the update check and apply update if necessary
 apply_update()
@@ -92,7 +101,7 @@ while True:
             if START_STOP_BUTTON.check_for_input(mouse_pos):
                 started = not started
                 START_STOP_BUTTON.text_input = "STOP" if started else "START"
-                START_STOP_BUTTON.text = pygame.font.Font("assets/ArialRoundedMTBold.ttf", 20).render(
+                START_STOP_BUTTON.text = pygame.font.Font(os.path.join(ASSETS_DIR, "ArialRoundedMTBold.ttf"), 20).render(
                     START_STOP_BUTTON.text_input, True, START_STOP_BUTTON.base_color)
 
             if POMODORO_BUTTON.check_for_input(mouse_pos):
@@ -105,10 +114,10 @@ while True:
                 current_seconds = LONG_BREAK_LENGTH
                 started = False
 
-            # Check if user clicked on the color options
-            new_color = get_color_from_pos(mouse_pos)
-            if new_color:
-                background_color = new_color
+            # TODO: v1.1
+            # new_color = get_color_from_pos(mouse_pos)
+            # if new_color:
+            #     background_color = new_color
 
         if event.type == pygame.USEREVENT and started:
             current_seconds -= 1
@@ -126,7 +135,8 @@ while True:
     SCREEN.blit(timer_text, timer_text_rect)
 
     draw_version_box()
-    draw_color_options()
+    # TODO: v1.1
+    # draw_color_options()
 
     pygame.display.flip()
     CLOCK.tick(30)

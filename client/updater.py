@@ -18,6 +18,7 @@ API_ENDPOINTS = {
 
 VERSION_FILE = "version.txt"
 DOWNLOAD_PATH = "/tmp/new_version.zip"
+CHECKSUM_PATH = "/tmp/new_version.zip.sha256"
 BACKUP_PATH = "/tmp/backup.zip"
 
 def get_os_version():
@@ -65,23 +66,40 @@ def check_for_updates():
         print(f"Failed to check for updates: {e}")
         return None
 
-def download_update(download_url):
-    response = requests.get(download_url, stream=True)
-    with open(DOWNLOAD_PATH, 'wb') as file:
+def download_file(url, path):
+    print(f"Downloading from {url} ...")
+    response = requests.get(url, stream=True)
+    response.raise_for_status()  # Ensure the request was successful
+
+    with open(path, 'wb') as file:
         for chunk in response.iter_content(chunk_size=8192):
             file.write(chunk)
+    
+    # Check if the file is indeed downloaded
+    if os.path.getsize(path) == 0:
+        raise Exception(f"Downloaded file is empty: {path}")
+    print(f"Downloaded file size: {os.path.getsize(path)} bytes")
 
-def validate_update(expected_checksum):
+def download_update(download_url, checksum_url):
+    download_file(download_url, DOWNLOAD_PATH)
+    download_file(checksum_url, CHECKSUM_PATH)
+
+def validate_update():
+    with open(CHECKSUM_PATH, 'r') as file:
+        expected_checksum = file.read().strip()
+    
     sha256_hash = hashlib.sha256()
     with open(DOWNLOAD_PATH, 'rb') as file:
         for byte_block in iter(lambda: file.read(4096), b""):
             sha256_hash.update(byte_block)
+    
     return sha256_hash.hexdigest() == expected_checksum
 
 def apply_update():
     shutil.copyfile(sys.argv[0], BACKUP_PATH)  # Backup current version
     shutil.unpack_archive(DOWNLOAD_PATH, os.path.dirname(sys.argv[0]))
     os.remove(DOWNLOAD_PATH)
+    os.remove(CHECKSUM_PATH)
     subprocess.Popen([sys.executable] + sys.argv)  # Restart application
     sys.exit()
 
@@ -89,8 +107,8 @@ def main():
     try:
         version_info = check_for_updates()
         if version_info:
-            download_update(version_info['download_url'])
-            if validate_update(version_info['checksum']):
+            download_update(version_info['download_url'], version_info['checksum_url'])
+            if validate_update():
                 apply_update()
                 write_current_version(version_info['version'])
             else:

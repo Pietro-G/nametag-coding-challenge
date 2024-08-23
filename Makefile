@@ -1,9 +1,9 @@
 # Paths
 SCRIPT = client/client.py
-BUILD_DIR = client/build
+ASSETS_DIR = client/assets
 DIST_DIR = client/dist
-SPEC_FILE = client/$(EXE_NAME).spec
-EXE_PATH = $(DIST_DIR)/$(EXE_NAME)
+BUILD_DIR = client/build
+VERSION_FILE = client/version.txt
 
 all: install build
 
@@ -11,15 +11,18 @@ install:
 	pip install -r requirements.txt
 
 build: install
-	cd client && $(PYTHON) -m PyInstaller --onefile --windowed $(notdir $(SCRIPT)) && \
-	mkdir -p $(DIST_DIR) && \
-	find . -maxdepth 1 -mindepth 1 ! -name build ! -name dist -exec cp -r {} $(DIST_DIR) \;
+	python -m PyInstaller --onefile --windowed \
+		--add-data "$(ASSETS_DIR):assets" \
+		--add-data "$(VERSION_FILE):." \
+		--distpath $(DIST_DIR) \
+		--workpath $(BUILD_DIR) \
+		$(SCRIPT)
 
 clean:
-	rm -rf $(BUILD_DIR) $(DIST_DIR) $(SPEC_FILE)
+	rm -rf $(BUILD_DIR) $(DIST_DIR) client/*.spec
 
 run-client:
-	python client/client.py
+	$(DIST_DIR)/client
 
 run-server:
 	python server/server.py
