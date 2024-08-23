@@ -13,6 +13,13 @@ pygame.display.set_caption("Pomodoro Timer")
 RED = (186, 73, 73)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
+GREEN = (73, 186, 73)
+BLUE = (73, 73, 186)
+YELLOW = (186, 186, 73)
+
+# List of available colors for background
+BACKGROUND_COLORS = [RED, GREEN, BLUE, YELLOW]
+background_color = RED  # Default background color
 
 # Initialize clock
 CLOCK = pygame.time.Clock()
@@ -49,7 +56,28 @@ def draw_version_box():
     version_surface = VERSION_FONT.render(version_text, True, BLACK)
     version_rect = pygame.Rect(WIDTH - 160, HEIGHT - 40, 150, 30)  # Position and size of the box
     pygame.draw.rect(SCREEN, WHITE, version_rect)  # Draw the box
-    SCREEN.blit(version_surface, version_surface.get_rect(center=version_rect.center))    
+    SCREEN.blit(version_surface, version_surface.get_rect(center=version_rect.center))
+
+def draw_color_options():
+    colors = BACKGROUND_COLORS
+    box_size = 40
+    start_x = WIDTH - 250
+    start_y = HEIGHT - 100
+    for i, color in enumerate(colors):
+        color_rect = pygame.Rect(start_x + i * (box_size + 10), start_y, box_size, box_size)
+        pygame.draw.rect(SCREEN, color, color_rect)
+        pygame.draw.rect(SCREEN, BLACK, color_rect, 2)  # Border around each color box
+
+def get_color_from_pos(pos):
+    colors = BACKGROUND_COLORS
+    box_size = 40
+    start_x = WIDTH - 250
+    start_y = HEIGHT - 100
+    for i, color in enumerate(colors):
+        color_rect = pygame.Rect(start_x + i * (box_size + 10), start_y, box_size, box_size)
+        if color_rect.collidepoint(pos):
+            return color
+    return None
 
 # Run the update check and apply update if necessary
 apply_update()
@@ -77,10 +105,15 @@ while True:
                 current_seconds = LONG_BREAK_LENGTH
                 started = False
 
+            # Check if user clicked on the color options
+            new_color = get_color_from_pos(mouse_pos)
+            if new_color:
+                background_color = new_color
+
         if event.type == pygame.USEREVENT and started:
             current_seconds -= 1
 
-    SCREEN.fill(RED)
+    SCREEN.fill(background_color)
 
     # Update and draw elements
     START_STOP_BUTTON.update(SCREEN, pygame.mouse.get_pos())
@@ -93,6 +126,7 @@ while True:
     SCREEN.blit(timer_text, timer_text_rect)
 
     draw_version_box()
+    draw_color_options()
 
     pygame.display.flip()
     CLOCK.tick(30)
