@@ -25,7 +25,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Build the application
-      run: pyinstaller --onefile client/main.py
+      run: pyinstaller --onefile client/client.py
 
     - name: Archive build artifacts
       run: zip -r app-linux.zip dist/
@@ -55,7 +55,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Build the application
-      run: pyinstaller --onefile client/main.py
+      run: pyinstaller --onefile client/client.py
 
     - name: Archive build artifacts
       run: zip -r app-macos.zip dist/
@@ -85,7 +85,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Build the application
-      run: pyinstaller --onefile client\main.py
+      run: pyinstaller --onefile client\client.py
 
     - name: Archive build artifacts
       run: Compress-Archive -Path dist\* -DestinationPath app-windows.zip
