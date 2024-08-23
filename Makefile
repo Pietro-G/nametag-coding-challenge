@@ -3,7 +3,7 @@ PYTHON = python
 PIP = pip
 REQUIREMENTS_FILE = requirements.txt
 EXE_NAME = main
-SCRIPT = client/main.py
+SCRIPT = client/client.py
 BUILD_DIR = client/build
 DIST_DIR = client/dist
 SPEC_FILE = client/$(EXE_NAME).spec
@@ -26,8 +26,11 @@ build: install
 clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR) $(SPEC_FILE)
 
-# Run the executable
-run:
+# Run the client
+run-client:
 	$(EXE_PATH)
+
+run-server:
+	python server/server.py
 
 .PHONY: all install build clean run

@@ -1,7 +1,8 @@
 import pygame
 import sys
-import time
+import requests
 from button import Button
+from updater import CURRENT_VERSION, check_for_updates
 
 pygame.init()
 
@@ -45,17 +46,11 @@ pygame.time.set_timer(pygame.USEREVENT, 1000)
 started = False
 
 def draw_version_box():
-    version_text = "Version 1.0.0"  # Replace with actual version
+    version_text = CURRENT_VERSION  # Replace with actual version
     version_surface = VERSION_FONT.render(version_text, True, BLACK)
     version_rect = pygame.Rect(WIDTH - 160, HEIGHT - 40, 150, 30)  # Position and size of the box
     pygame.draw.rect(SCREEN, WHITE, version_rect)  # Draw the box
-    SCREEN.blit(version_surface, version_surface.get_rect(center=version_rect.center))
-
-def check_for_updates():
-    # Simulate checking for updates
-    print("Checking for updates ...")
-    time.sleep(3)  # Simulate delay in checking updates
-    print("Latest version running.")
+    SCREEN.blit(version_surface, version_surface.get_rect(center=version_rect.center))    
 
 # Run the update check before opening the main window
 check_for_updates()
