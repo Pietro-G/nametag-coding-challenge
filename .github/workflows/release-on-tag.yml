@@ -32,13 +32,17 @@ jobs:
           client/client.py
 
     - name: Archive build artifacts
-      run: zip -r app-linux.zip dist/
+      run: |
+        zip -r app-linux.zip dist/
+        sha256sum app-linux.zip > app-linux.zip.sha256
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
         name: app-linux
-        path: app-linux.zip
+        path: |
+          app-linux.zip
+          app-linux.zip.sha256
 
   build-macos:
     name: Build on macOS
@@ -66,13 +70,17 @@ jobs:
           client/client.py
 
     - name: Archive build artifacts
-      run: zip -r app-macos.zip dist/
+      run: |
+        zip -r app-macos.zip dist/
+        shasum -a 256 app-macos.zip > app-macos.zip.sha256
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
         name: app-macos
-        path: app-macos.zip
+        path: |
+          app-macos.zip
+          app-macos.zip.sha256
 
   build-windows:
     name: Build on Windows
@@ -97,13 +105,17 @@ jobs:
         pyinstaller --onefile --windowed --add-data "client/assets;assets" --add-data "client/version.txt;." client\client.py
 
     - name: Archive build artifacts
-      run: Compress-Archive -Path dist\* -DestinationPath app-windows.zip
+      run: |
+        Compress-Archive -Path dist\* -DestinationPath app-windows.zip
+        Get-FileHash -Path app-windows.zip -Algorithm SHA256 | Select-Object -ExpandProperty Hash | Out-File -FilePath app-windows.zip.sha256
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
         name: app-windows
-        path: app-windows.zip
+        path: |
+          app-windows.zip
+          app-windows.zip.sha256
 
   release:
     name: Create GitHub Release
@@ -150,6 +162,16 @@ jobs:
         asset_name: app-linux.zip
         asset_content_type: application/zip
 
+    - name: Upload Linux Checksum Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: app-linux.zip.sha256
+        asset_name: app-linux.zip.sha256
+        asset_content_type: text/plain
+
     - name: Upload macOS Release Asset
       uses: actions/upload-release-asset@v1
       env:
@@ -160,6 +182,16 @@ jobs:
         asset_name: app-macos.zip
         asset_content_type: application/zip
 
+    - name: Upload macOS Checksum Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: app-macos.zip.sha256
+        asset_name: app-macos.zip.sha256
+        asset_content_type: text/plain
+
     - name: Upload Windows Release Asset
       uses: actions/upload-release-asset@v1
       env:
@@ -169,3 +201,13 @@ jobs:
         asset_path: app-windows.zip
         asset_name: app-windows.zip
         asset_content_type: application/zip
+
+    - name: Upload Windows Checksum Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: app-windows.zip.sha256
+        asset_name: app-windows.zip.sha256
+        asset_content_type: text/plain
