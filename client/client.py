@@ -80,14 +80,6 @@ def draw_color_options():
         pygame.draw.rect(SCREEN, color, color_rect)
         pygame.draw.rect(SCREEN, BLACK, color_rect, 2)  # Border around each color box
 
-# Update the read_current_version function to handle the version.txt file
-def read_current_version():
-    try:
-        with open(VERSION_FILE, 'r') as file:
-            return file.read().strip()
-    except FileNotFoundError:
-        return "Unknown version"
-
 # Run the update check and apply update if necessary
 apply_update()
 

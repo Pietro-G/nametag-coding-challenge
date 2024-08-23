@@ -1,10 +1,8 @@
 import os
-import time
 import sys
 import requests
-import shutil
 import hashlib
-import subprocess
+import base64
 import platform
 
 # Base URL for the API server
@@ -12,14 +10,21 @@ API_BASE_URL = "http://localhost:8000"
 
 # Endpoints
 API_ENDPOINTS = {
-    "check_update": f"{API_BASE_URL}/get-update",
-    "check_version": f"{API_BASE_URL}/check-version"
+    "check_version": f"{API_BASE_URL}/check-version",
+    "get_update": f"{API_BASE_URL}/get-update"
 }
 
-VERSION_FILE = "version.txt"
+# Determine base directory for the updater
+if getattr(sys, 'frozen', False):
+    # If running from a frozen executable
+    BASE_DIR = sys._MEIPASS
+else:
+    # If running from a script
+    BASE_DIR = os.path.dirname(__file__)
+
+VERSION_FILE = os.path.join(BASE_DIR, "version.txt")
 DOWNLOAD_PATH = "/tmp/new_version.zip"
 CHECKSUM_PATH = "/tmp/new_version.zip.sha256"
-BACKUP_PATH = "/tmp/backup.zip"
 
 def get_os_version():
     system = platform.system()
@@ -33,10 +38,13 @@ def get_os_version():
         raise ValueError("Unsupported OS. Only Linux, macOS, and Windows are supported.")
 
 def read_current_version():
-    if os.path.exists(VERSION_FILE):
+    try:
         with open(VERSION_FILE, 'r') as file:
-            return file.read().strip()
-    return None
+            version = file.read().strip()
+            return version
+    except FileNotFoundError:
+        print("Version file not found.")
+        return "Unknown version"
 
 def write_current_version(version):
     with open(VERSION_FILE, 'w') as file:
@@ -44,10 +52,9 @@ def write_current_version(version):
 
 def check_for_updates():
     os_version = get_os_version()
-    url = f"{API_ENDPOINTS['check_update']}?os_version={os_version}"
+    url = f"{API_ENDPOINTS['check_version']}?os_version={os_version}"
     
     print(f"Checking for updates for {os_version} ...")
-    time.sleep(3)
     try:
         # Contact the FastAPI server to get the latest version info
         response = requests.get(url)
@@ -56,68 +63,90 @@ def check_for_updates():
 
         current_version = read_current_version()
         if version_info['version'] != current_version:
-            print("Downloading latest update...")
+            print("New version available.")
             return version_info
         else:
-            print("Latest version running: ", current_version)
+            print("No updates available.")
             return None
 
     except requests.exceptions.RequestException as e:
         print(f"Failed to check for updates: {e}")
         return None
 
-def download_file(url, path):
-    print(f"Downloading from {url} ...")
-    response = requests.get(url, stream=True)
-    response.raise_for_status()  # Ensure the request was successful
-
-    with open(path, 'wb') as file:
-        for chunk in response.iter_content(chunk_size=8192):
-            file.write(chunk)
+def get_update_info():
+    os_version = get_os_version()
+    url = f"{API_ENDPOINTS['get_update']}?os_version={os_version}"
     
-    # Check if the file is indeed downloaded
-    if os.path.getsize(path) == 0:
-        raise Exception(f"Downloaded file is empty: {path}")
-    print(f"Downloaded file size: {os.path.getsize(path)} bytes")
+    print(f"Getting update info for {os_version} ...")
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        update_info = response.json()
+        return update_info
 
-def download_update(download_url, checksum_url):
-    download_file(download_url, DOWNLOAD_PATH)
-    download_file(checksum_url, CHECKSUM_PATH)
+    except requests.exceptions.RequestException as e:
+        print(f"Failed to get update info: {e}")
+        return None
+
+def save_file(base64_data, path):
+    print(f"Saving file to {path} ...")
+    try:
+        file_data = base64.b64decode(base64_data)
+        with open(path, 'wb') as file:
+            file.write(file_data)
+        
+        # Verify if the file has been successfully saved
+        if os.path.getsize(path) == 0:
+            raise Exception(f"Saved file is empty: {path}")
+
+        print(f"File successfully saved as {path}. Size: {os.path.getsize(path)} bytes")
+    
+    except Exception as e:
+        print(f"Error saving file: {e}")
+        raise
+
+def download_update(download_base64, checksum_base64):
+    save_file(download_base64, DOWNLOAD_PATH)
+    save_file(checksum_base64, CHECKSUM_PATH)
 
 def validate_update():
     with open(CHECKSUM_PATH, 'r') as file:
-        expected_checksum = file.read().strip()
+        # Read the line and split by space to get only the checksum part
+        checksum_line = file.read().strip()
+        expected_checksum = checksum_line.split()[0]  # Take only the checksum part
     
     sha256_hash = hashlib.sha256()
     with open(DOWNLOAD_PATH, 'rb') as file:
         for byte_block in iter(lambda: file.read(4096), b""):
             sha256_hash.update(byte_block)
     
-    return sha256_hash.hexdigest() == expected_checksum
+    computed_checksum = sha256_hash.hexdigest()
+    print(f"Expected checksum: {expected_checksum}")
+    print(f"Computed checksum: {computed_checksum}")
 
-def apply_update():
-    shutil.copyfile(sys.argv[0], BACKUP_PATH)  # Backup current version
-    shutil.unpack_archive(DOWNLOAD_PATH, os.path.dirname(sys.argv[0]))
-    os.remove(DOWNLOAD_PATH)
-    os.remove(CHECKSUM_PATH)
-    subprocess.Popen([sys.executable] + sys.argv)  # Restart application
-    sys.exit()
+    return computed_checksum == expected_checksum
 
 def main():
+    current_version = read_current_version()
+    print(f"Current version: {current_version}")
     try:
         version_info = check_for_updates()
         if version_info:
-            download_update(version_info['download_url'], version_info['checksum_url'])
-            if validate_update():
-                apply_update()
-                write_current_version(version_info['version'])
+            update_info = get_update_info()
+            if update_info:
+                download_update(update_info['download_zip'], update_info['checksum_zip'])
+                if validate_update():
+                    write_current_version(update_info['version'])
+                    print(f"Update applied successfully. New version: {update_info['version']}")
+                else:
+                    print("Update validation failed.")
             else:
-                print("Update validation failed.")
+                print("Failed to get update info.")
         else:
             print("No updates available.")
+    
     except ValueError as e:
         print(e)
-        sys.exit(1)
 
 if __name__ == "__main__":
     main()
