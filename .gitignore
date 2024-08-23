@@ -65,4 +65,7 @@ dmypy.json
 *.env
 
 # Jupyter Notebook
-.ipy
+.ipynb_checkpoints/
+
+# PyInstaller specific
+*.spec
