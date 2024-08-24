@@ -8,3 +8,15 @@ As in real life, answers to clarifying questions may be elusive. If you have a q
 # Populating the .env:
 1. Add Github Username / Repo in .env
 2. To generate a token go to: Settings > Developer Settings > Select Personal Access Tokens > Generate New Token
+
+# Running the server:
+`make run-server`
+
+# Running the client:
+`make run-client`
+
+# Creating a new version:
+Whenever a tag is pushed with udpates, the cicd in this project will create cross-platform compatible updates
+
+# Running an update:
+If there is an update available, `make update` should fetch the latest executable, if the latest update isn't running, the executable will halt and ask the user to update.

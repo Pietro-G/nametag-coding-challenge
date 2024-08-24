@@ -1,7 +1,7 @@
 # Paths
 SCRIPT = client/client.py
 ASSETS_DIR = client/assets
-DIST_DIR = client/dist
+DIST_DIR = client/dist/dist/
 BUILD_DIR = client/build
 VERSION_FILE = client/version.txt
 

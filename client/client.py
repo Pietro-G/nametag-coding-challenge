@@ -83,7 +83,8 @@ def draw_color_options():
 # Check for updates
 def check_for_and_apply_update():
     try:
-        if check_for_updates():
+        update_info = check_for_updates()
+        if update_info != None:
             print("An update is available. Please run 'make update' to update the application.")
             pygame.quit()
             sys.exit()
