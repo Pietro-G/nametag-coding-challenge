@@ -2,7 +2,7 @@ import pygame
 import sys
 import os
 from button import Button
-from updater import read_current_version, check_for_updates, apply_update
+from updater import read_current_version, check_for_updates
 
 pygame.init()
 
