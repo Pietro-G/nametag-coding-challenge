@@ -16,7 +16,7 @@ As in real life, answers to clarifying questions may be elusive. If you have a q
 `make run-client`
 
 # Creating a new version:
-Whenever a tag is pushed with udpates, the cicd in this project will create cross-platform compatible updates
+Whenever a tag is pushed with udpates, the cicd in this project will create cross-platform compatible updates. The server is configured to specifically looked for tagged released in order to check for updates, therefore the underlying assumption is that a tagged version of the software exists.
 
 # Running an update:
-If there is an update available, `make update` should fetch the latest executable, if the latest update isn't running, the executable will halt and ask the user to update.
+If there is an update available, `make update` should fetch the latest executable, if the latest update isn't running, the executable will halt and ask the user to updates.
