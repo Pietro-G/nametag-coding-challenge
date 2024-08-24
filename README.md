@@ -20,3 +20,5 @@ Whenever a tag is pushed with udpates, the cicd in this project will create cros
 
 # Running an update:
 If there is an update available, `make update` should fetch the latest executable, if the latest update isn't running, the executable will halt and ask the user to updates.
+
+I have gone ahead and produced all my questions and stream of thoughts in the following document: https://hackmd.io/JL-R8HEcQ-CjnX-yKBaeWg
