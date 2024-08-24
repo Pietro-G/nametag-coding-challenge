@@ -22,9 +22,23 @@ clean:
 	rm -rf $(BUILD_DIR) $(DIST_DIR) client/*.spec
 
 run-client:
-	$(DIST_DIR)/client
+	$(DIST_DIR)/client$(EXE_SUFFIX)
 
 run-server:
 	python server/server.py
 
-.PHONY: all install build clean run
+update:
+	@echo "Detecting OS..."
+	@UNAME_S=$(shell uname -s) && \
+	if [ "$$UNAME_S" = "Linux" ]; then \
+		python updater.py || { echo "Update failed or no update available"; exit 0; }; \
+	elif [ "$$UNAME_S" = "Darwin" ]; then \
+		python updater.py || { echo "Update failed or no update available"; exit 0; }; \
+	elif [ "$$UNAME_S" = "CYGWIN_NT-10.0" ]; then \
+		python updater.py || { echo "Update failed or no update available"; exit 0; }; \
+	else \
+		echo "Unsupported OS"; \
+		exit 1; \
+	fi
+
+.PHONY: all install build clean run-client run-server update

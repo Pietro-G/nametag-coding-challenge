@@ -2,7 +2,7 @@ import pygame
 import sys
 import os
 from button import Button
-from updater import read_current_version, main as apply_update
+from updater import read_current_version, check_for_updates, apply_update
 
 pygame.init()
 
@@ -80,8 +80,20 @@ def draw_color_options():
         pygame.draw.rect(SCREEN, color, color_rect)
         pygame.draw.rect(SCREEN, BLACK, color_rect, 2)  # Border around each color box
 
-# Run the update check and apply update if necessary
-apply_update()
+# Check for updates
+def check_for_and_apply_update():
+    try:
+        if check_for_updates():
+            print("An update is available. Please run 'make update' to update the application.")
+            pygame.quit()
+            sys.exit()
+    except Exception as e:
+        print(f"An error occurred while checking for updates: {e}")
+        pygame.quit()
+        sys.exit()
+
+# Run the update check
+check_for_and_apply_update()
 
 while True:
     for event in pygame.event.get():
